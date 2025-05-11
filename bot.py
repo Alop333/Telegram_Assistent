@@ -7,8 +7,8 @@ BOT_TOKEN = os.getenv('BOT_TOKEN')
 SENHA_CORRETA = os.getenv('SENHA_CORRETA')
 ARQUIVO_APROVADOS = os.getenv('ARQUIVO_APROVADOS')
 bot = telebot.TeleBot(BOT_TOKEN)
-PASTA_PDFS = "pdfs"
-os.makedirs(PASTA_PDFS, exist_ok=True)
+SOURCE = "Source"
+os.makedirs(SOURCE, exist_ok=True)
 
 def carregar_ids_aprovados():
     try:
@@ -37,7 +37,7 @@ def receber_documento(message):
             file_path = file_info.file_path
 
             downloaded_file = bot.download_file(file_path)
-            caminho_local = os.path.join(PASTA_PDFS, file_name)
+            caminho_local = os.path.join(SOURCE, file_name)
             with open(caminho_local, 'wb') as f:
                 f.write(downloaded_file)
 
@@ -51,9 +51,9 @@ def conversar(message):
 
 @bot.message_handler(commands=['files','show'])
 def show_dir(message):
-    nomes_arquivos = [f for f in os.listdir(PASTA_PDFS) if os.path.isfile(os.path.join(PASTA_PDFS, f))]
+    nomes_arquivos = [f for f in os.listdir(SOURCE) if os.path.isfile(os.path.join(SOURCE, f))]
     if nomes_arquivos:
-        string_resultado = '\n\n'.join(nomes_arquivos)
+        string_resultado = '\n'.join(nomes_arquivos)
         bot.reply_to(message, f"Aqui está a lista de arquivos presentes na biblioteca do bot:\n{string_resultado}")
     else:
         bot.reply_to(message, "A biblioteca do bot está vazia ;-;")
