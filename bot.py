@@ -57,7 +57,8 @@ def show_dir(message):
         path = SOURCE + '/' + chat_id
         nomes_arquivos = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
         if nomes_arquivos:
-            string_resultado = '\n'.join(nomes_arquivos)
+            number_list = [f"{i+1}. {nome}" for i, nome in enumerate(nomes_arquivos)]
+            string_resultado = '\n'.join(number_list)
             bot.reply_to(message, f"Aqui está a lista de arquivos presentes na biblioteca do bot:\n{string_resultado}")
         else:
             bot.reply_to(message, "A biblioteca do bot está vazia ;-;")
