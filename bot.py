@@ -1,13 +1,16 @@
 import os
 from dotenv import load_dotenv
 import telebot
+import requests
 
 load_dotenv()
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 SENHA_CORRETA = os.getenv('SENHA_CORRETA')
 ARQUIVO_APROVADOS = os.getenv('ARQUIVO_APROVADOS')
-bot = telebot.TeleBot(BOT_TOKEN)
 SOURCE = "Source"
+
+
+bot = telebot.TeleBot(BOT_TOKEN)
 os.makedirs(SOURCE, exist_ok=True)
 
 def carregar_ids_aprovados():
@@ -46,8 +49,24 @@ def receber_documento(message):
         bot.reply_to(message, "Envie a senha para ganhar acesso ao bot")
 
 
-def conversar(message):
-    bot.reply_to(message, "bobo")
+def conversar(message, modelo="gemma3:4b-it-qat"):
+    url = "http://localhost:11434/api/chat"
+    payload = {
+        "model": modelo,
+        "messages": [
+            {"role": "user", "content": message.text}
+        ],
+        "stream": False  # desativa streaming para facilitar o uso
+    }
+
+    response = requests.post(url, json=payload)
+
+    if response.status_code == 200:
+        data = response.json()
+        resposta = data.get("message", {}).get("content", "Sem resposta.")
+        bot.reply_to(message, resposta.strip())
+    else:
+        bot.reply_to(message, "Desculpe, o bot não está funcionando no momento")
 
 @bot.message_handler(commands=['files','show'])
 def show_dir(message):
@@ -69,11 +88,13 @@ def show_dir(message):
 
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
-    bot.reply_to(message, "Olá, sou um bot para armazenar seus arquivos.")
+    text_start = "Olá, sou um bot para armazenar seus arquivos."
     chat_id = format(message.chat.id)
 
     if chat_id not in ids_aprovados:
-        bot.reply_to(message, "Por favor, envie a senha para ganhar acesso ao bot")
+        text_start += "\nPor favor, envie a senha para ganhar acesso ao bot"
+
+    bot.reply_to(message, text_start)
 
 
 @bot.message_handler(func=lambda message: True) 
@@ -88,6 +109,7 @@ def verificar_senha(message):
             ids_aprovados.add(chat_id)
             path = SOURCE + '/' + chat_id
             os.makedirs(path, exist_ok=True)
+
             bot.reply_to(message, "Senha correta! Acesso liberado.")
         else:
             bot.reply_to(message, "Você ainda não tem acesso. Por favor, envie a senha")
