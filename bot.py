@@ -37,7 +37,7 @@ def receber_documento(message):
             file_path = file_info.file_path
 
             downloaded_file = bot.download_file(file_path)
-            caminho_local = os.path.join(SOURCE, file_name)
+            caminho_local = os.path.join(SOURCE + '/' + chat_id, file_name)
             with open(caminho_local, 'wb') as f:
                 f.write(downloaded_file)
 
@@ -51,12 +51,18 @@ def conversar(message):
 
 @bot.message_handler(commands=['files','show'])
 def show_dir(message):
-    nomes_arquivos = [f for f in os.listdir(SOURCE) if os.path.isfile(os.path.join(SOURCE, f))]
-    if nomes_arquivos:
-        string_resultado = '\n'.join(nomes_arquivos)
-        bot.reply_to(message, f"Aqui está a lista de arquivos presentes na biblioteca do bot:\n{string_resultado}")
+    chat_id = format(message.chat.id)
+
+    if chat_id in ids_aprovados:
+        path = SOURCE + '/' + chat_id
+        nomes_arquivos = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+        if nomes_arquivos:
+            string_resultado = '\n'.join(nomes_arquivos)
+            bot.reply_to(message, f"Aqui está a lista de arquivos presentes na biblioteca do bot:\n{string_resultado}")
+        else:
+            bot.reply_to(message, "A biblioteca do bot está vazia ;-;")
     else:
-        bot.reply_to(message, "A biblioteca do bot está vazia ;-;")
+        bot.reply_to(message, "Envie a senha para ganhar acesso ao bot")
     
 
 
@@ -79,6 +85,8 @@ def verificar_senha(message):
         if message.text.strip() == SENHA_CORRETA:
             salvar_id_aprovado(chat_id)
             ids_aprovados.add(chat_id)
+            path = SOURCE + '/' + chat_id
+            os.makedirs(path, exist_ok=True)
             bot.reply_to(message, "Senha correta! Acesso liberado.")
         else:
             bot.reply_to(message, "Você ainda não tem acesso. Por favor, envie a senha")
