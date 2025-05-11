@@ -2,16 +2,19 @@ import os
 from dotenv import load_dotenv
 import telebot
 import requests
+import google.generativeai as genai
 
 load_dotenv()
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 SENHA_CORRETA = os.getenv('SENHA_CORRETA')
 ARQUIVO_APROVADOS = os.getenv('ARQUIVO_APROVADOS')
+GEMINI_KEY = os.getenv('GEMINI_KEY')
 SOURCE = "Source"
 
 
 bot = telebot.TeleBot(BOT_TOKEN)
 os.makedirs(SOURCE, exist_ok=True)
+genai.configure(api_key=GEMINI_KEY)
 
 def carregar_ids_aprovados():
     try:
@@ -25,6 +28,7 @@ def salvar_id_aprovado(chat_id):
         f.write(f"{chat_id}\n")
 
 ids_aprovados = carregar_ids_aprovados()
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 @bot.message_handler(content_types=['document'])
 def receber_documento(message):
@@ -49,24 +53,9 @@ def receber_documento(message):
         bot.reply_to(message, "Envie a senha para ganhar acesso ao bot")
 
 
-def conversar(message, modelo="gemma3:4b-it-qat"):
-    url = "http://localhost:11434/api/chat"
-    payload = {
-        "model": modelo,
-        "messages": [
-            {"role": "user", "content": message.text}
-        ],
-        "stream": False  # desativa streaming para facilitar o uso
-    }
-
-    response = requests.post(url, json=payload)
-
-    if response.status_code == 200:
-        data = response.json()
-        resposta = data.get("message", {}).get("content", "Sem resposta.")
-        bot.reply_to(message, resposta.strip())
-    else:
-        bot.reply_to(message, "Desculpe, o bot não está funcionando no momento")
+def conversar(message):
+    response = model.generate_content(message.text)
+    bot.reply_to(message, response.text)
 
 @bot.message_handler(commands=['files','show'])
 def show_dir(message):
